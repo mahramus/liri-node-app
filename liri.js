@@ -18,12 +18,20 @@ switch (request) {
       break;
   
     case "movie-this":
-      withdraw();
+      omdbFetch();
       break;
   
     case "do-what-it-says":
-      lotto();
+      randomFetch();
       break;
   };
 
-  
+  /* Pseudocode
+
+  function tweetFetch() will query the Twitter API for my last 20 tweets and output them to the command line
+
+  function spotifyFetch() will query the Spotify API for the requested song and return a JSON file with a ton of info; we will only output Artist, Song's name, Preview link, Album title
+
+  function omdbFetch() will query the OMDb API for the requested movie and return a JSON with a ton of info; we will only output Movie title, Movie year, IMDB rating, Rotten Tomatoes score, Country of production, Language, Plot, Actors
+
+  function randomFetch() will use the fs Node package to do whatever API call we specify in the random.txt file
