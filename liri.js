@@ -1,37 +1,134 @@
 require("dotenv").config();
 
-var bandList = require("./keys.js");
+var Twitter = require("twitter");
+
+var Spotify = require("node-spotify-api");
+
+var keys = require("./keys");
+
+var request = require("request");
+
+var fs = require("fs");
 
 var spotify = new Spotify(keys.spotify);
-var client = new Twitter(keys.twitter);
 
-var request = process.argv[2];
-var mediaName = process.argv[3];
+// =======================================
 
-switch (request) {
+var getArtistNames = function (artist) {
+  return artist.name;
+};
+
+var spotifyFetch = function (songName) {
+  if (songName === undefined) {
+    songName = "What's my age again";
+  }
+
+  spotify.search(
+    {
+      type: "track",
+      query: songName
+    },
+    function (err, data) {
+      if (err) {
+        console.log("Error occurred: " + err);
+        return;
+      }
+
+      var songs = data.tracks.items;
+
+      for (var i = 0; i < songs.length; i++) {
+        console.log(i);
+        console.log("artist(s): " + songs[i].artists.map(getArtistNames));
+        console.log("song name: " + songs[i].name);
+        console.log("preview song: " + songs[i].preview_url);
+        console.log("album: " + songs[i].album.name);
+        console.log("--------------------------------------");
+      }
+    }
+  );
+};
+
+var tweetFetch = function () {
+  var client = new Twitter(keys.twitter);
+
+  var params = {
+    screen_name: "cnn"
+  };
+  client.get("statuses/user_timeline", params, function (error, tweets, response) {
+    if (!error) {
+      for (var i = 0; i < tweets.length; i++) {
+        console.log(tweets[i].created_at);
+        console.log("");
+        console.log(tweets[i].text);
+      }
+    }
+  });
+};
+
+var omdbFetch = function (movieName) {
+  if (movieName === undefined) {
+    movieName = "Mr Nobody";
+  }
+
+  var urlHit = "http://www.omdbapi.com/?t=" + movieName + "&y=&plot=full&tomato=true&apikey=trilogy";
+
+  request(urlHit, function (error, response, body) {
+    if (!error && response.statusCode === 200) {
+      var jsonData = JSON.parse(body);
+
+      console.log("Title: " + jsonData.Title);
+      console.log("Year: " + jsonData.Year);
+      console.log("Rated: " + jsonData.Rated);
+      console.log("IMDB Rating: " + jsonData.imdbRating);
+      console.log("Country: " + jsonData.Country);
+      console.log("Language: " + jsonData.Language);
+      console.log("Plot: " + jsonData.Plot);
+      console.log("Actors: " + jsonData.Actors);
+      console.log("Rotten Tomatoes Rating: " + jsonData.Ratings[1].Value);
+    }
+  });
+};
+
+var doWhatItSays = function () {
+  fs.readFile("random.txt", "utf8", function (error, data) {
+    console.log(data);
+
+    var dataArr = data.split(",");
+
+    if (dataArr.length === 2) {
+      pick(dataArr[0], dataArr[1]);
+    }
+    else if (dataArr.length === 1) {
+      pick(dataArr[0]);
+    }
+  });
+};
+
+var pick = function (caseData, functionData) {
+
+  switch (caseData) {
     case "my-tweets":
       tweetFetch();
       break;
-  
+
     case "spotify-this-song":
-      spotifyFetch();
+      spotifyFetch(functionData);
       break;
-  
+
     case "movie-this":
-      omdbFetch();
+      omdbFetch(functionData);
       break;
-  
+
     case "do-what-it-says":
-      randomFetch();
+      doWhatItSays();
       break;
-  };
+    default:
+      console.log("LIRI doesn't know that");
+  }
+};
 
-  /* Pseudocode
+var runThis = function(argOne, argTwo) {
+  pick(argOne, argTwo);
+};
 
-  function tweetFetch() will query the Twitter API for my last 20 tweets and output them to the command line
-
-  function spotifyFetch() will query the Spotify API for the requested song and return a JSON file with a ton of info; we will only output Artist, Song's name, Preview link, Album title
-
-  function omdbFetch() will query the OMDb API for the requested movie and return a JSON with a ton of info; we will only output Movie title, Movie year, IMDB rating, Rotten Tomatoes score, Country of production, Language, Plot, Actors
-
-  function randomFetch() will use the fs Node package to do whatever API call we specify in the random.txt file
+runThis(process.argv[2], process.argv[3]);
